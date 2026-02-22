@@ -600,7 +600,7 @@ export default class HomeassistantService {
           installed_version: `${tag}: ${currentDigest?.substring(0, 12)}`,
           latest_version: newDigest ? `${tag}: ${newDigest?.substring(0, 12)}` : null,
           release_summary: releaseNotes || "",
-          release_url: releaseNotesUrl || sourceRepo || "https://github.com/MichelFR/MqDockerUp",
+          release_url: releaseNotesUrl || sourceRepo || "https://github.com/cqrt/MqDockerUp",
           entity_picture: "https://raw.githubusercontent.com/cqrt/MqDockerUp/refs/heads/main/assets/logo_200x200.png",
           title: `${image}:${tag}`,
           in_progress: false,
