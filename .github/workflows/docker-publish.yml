@@ -1,10 +1,7 @@
 name: Docker
 
 on:
-  schedule:
-    - cron: '31 17 * * *'
   push:
-    branches: [ "main" ]
     tags: [ 'v*.*.*' ]
   pull_request:
     branches: [ "main" ]
@@ -26,7 +23,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0    # Needed to fetch full git history for commit messages
+          fetch-depth: 0
 
       - name: Install cosign
         if: github.event_name != 'pull_request'
@@ -69,7 +66,6 @@ jobs:
           DIGEST: ${{ steps.build-and-push.outputs.digest }}
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
 
-      # Get all commit messages since the last tag and format as a bullet list
       - name: Get commit messages since last tag
         if: startsWith(github.ref, 'refs/tags/')
         id: commit
@@ -84,7 +80,6 @@ jobs:
           echo "$MESSAGES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      # Create a GitHub Release using all commit messages as release notes
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
