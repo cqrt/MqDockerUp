@@ -596,7 +596,7 @@ export default class HomeassistantService {
         updatePayload = {
           installed_version: `${tag}: ${currentDigest?.substring(0, 12)}`,
           latest_version: newDigest ? `${tag}: ${newDigest?.substring(0, 12)}` : null,
-          release_summary: releaseNotes || "",
+          release_summary: "",
           release_url: `${sourceRepo ? sourceRepo : "https://github.com/cqrt/MqDockerUp"}`,
           entity_picture: "https://raw.githubusercontent.com/cqrt/MqDockerUp/refs/heads/main/assets/logo_200x200.png",
           title: `${image}:${tag}`,
@@ -613,8 +613,6 @@ export default class HomeassistantService {
       }
 
       this.publishMessage(client, updateTopic, updatePayload, {retain: true});
-    if (newDigest?.releaseNotes) {
-      updatePayload.release_summary = newDigest.releaseNotes;
     }
   }
 

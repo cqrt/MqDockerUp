@@ -42,28 +42,16 @@ export class GithubAdapter extends ImageRegistryAdapter {
         return `https://${registry}/v2/${user}/${image}/manifests/${this.tag}`;
     }
 
-    async checkForNewDigest(): Promise<{ newDigest: string; releaseNotes?: string }> {
+    async checkForNewDigest(): Promise<{ newDigest: string; }> {
         const accessTokenSet = !!config?.accessTokens?.github;
         if (accessTokenSet) {
             try {
                 this.http.defaults.headers['Accept'] = 'application/vnd.oci.image.index.v1+json';
 
-                // Get image manifest for digest
                 const response = await this.http.get(this.getImageUrl());
-                
-                // Get release notes from GitHub API
-                const [owner, repo] = this.image.split('/').slice(1);
-                const releasesResponse = await this.http.get(
-                    `https://api.github.com/repos/${owner}/${repo}/releases/latest`
-                );
-
-                const releaseNotes = releasesResponse.data.body;
                 const newDigest = this.removeSHA256Prefix(response.headers['docker-content-digest']);
 
-                return {
-                    newDigest,
-                    releaseNotes
-                };
+                return { newDigest };
             } catch (error) {
                 logger.error(`Failed to check for new Github image digest: ${error}`);
                 throw error;
