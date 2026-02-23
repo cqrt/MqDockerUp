@@ -572,7 +572,7 @@ export default class HomeassistantService {
         updatePayload = {
           installed_version: `${tag}: ${currentDigest?.substring(0, 12)}`,
           latest_version: newDigest ? `${tag}: ${newDigest?.substring(0, 12)}` : null,
-          release_notes: releaseNotes || null,
+          release_notes: releaseNotes ? (releaseNotes.length > 255 ? releaseNotes.substring(0, 252) + "..." : releaseNotes) : null,
           release_url: sourceRepo || null,
           entity_picture: null,
           title: `${image}:${tag}`,
@@ -586,6 +586,11 @@ export default class HomeassistantService {
             remaining: 0,
           }
         };
+        
+        // Add full release notes as a JSON attribute if they exist
+        if (releaseNotes) {
+          updatePayload.release_notes_full = releaseNotes;
+        }
 
         if (update_percentage !== null && remaining !== null) {
           updatePayload.update.progress = update_percentage;
@@ -600,13 +605,18 @@ export default class HomeassistantService {
         updatePayload = {
           installed_version: `${tag}: ${currentDigest?.substring(0, 12)}`,
           latest_version: newDigest ? `${tag}: ${newDigest?.substring(0, 12)}` : null,
-          release_summary: releaseNotes || "",
+          release_summary: releaseNotes ? (releaseNotes.length > 255 ? releaseNotes.substring(0, 252) + "..." : releaseNotes) : "",
           release_url: `${sourceRepo ? sourceRepo : "https://github.com/cqrt/MqDockerUp"}`,
           entity_picture: "https://raw.githubusercontent.com/cqrt/MqDockerUp/refs/heads/main/assets/logo_200x200.png",
           title: `${image}:${tag}`,
           in_progress: false,
           update_percentage: null,
         };
+        
+        // Add full release notes as a JSON attribute if they exist
+        if (releaseNotes) {
+          updatePayload.release_notes_full = releaseNotes;
+        }
 
         if (update_percentage !== null && remaining !== null) {
           updatePayload.update.update_percentage = update_percentage;
