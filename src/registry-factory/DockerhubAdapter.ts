@@ -50,7 +50,7 @@ export class DockerhubAdapter extends ImageRegistryAdapter {
         return `${DockerhubAdapter.DOCKER_API_URL}/${repoPath}/tags/${this.tag}`;
     }
     
-    async checkForNewDigest(): Promise<{ newDigest: string; }> {
+    async checkForNewDigest(): Promise<{ newDigest: string; releaseNotes?: string; }> {
         try {
             let response = await this.http.get(this.getImageUrl());
             let newDigest = null;
@@ -63,7 +63,7 @@ export class DockerhubAdapter extends ImageRegistryAdapter {
                 logger.error(response);
             }
 
-            return { newDigest};
+            return { newDigest };
         } catch (error) {
             logger.error(`Failed to check for new Docker image digest: ${error}`);
             logger.warn(`This might be a locally generated image. To prevent similar issues, exclude it from future MqDockerUp checks (see docs)`);

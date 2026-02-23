@@ -534,8 +534,12 @@ export default class HomeassistantService {
     const imageInfo = await DockerService.getImageInfo(image + ":" + tag);
     const repoDigests = imageInfo?.RepoDigests || [];
     let currentDigest: string | null = null, newDigest: string | null = null;
+    let releaseNotes: string | undefined = undefined;
 
-    newDigest = await DockerService.getImageNewDigest(image, tag);
+    // Get digest and release notes
+    const digestInfo = await DockerService.getImageNewDigestWithReleaseNotes(image, tag);
+    newDigest = digestInfo.newDigest;
+    releaseNotes = digestInfo.releaseNotes;
 
     if (!newDigest) {
       logger.warn(`Failed to find new digest for image ${image}:${tag}`);
@@ -568,8 +572,8 @@ export default class HomeassistantService {
         updatePayload = {
           installed_version: `${tag}: ${currentDigest?.substring(0, 12)}`,
           latest_version: newDigest ? `${tag}: ${newDigest?.substring(0, 12)}` : null,
-          release_notes: null,
-          release_url: null,
+          release_notes: releaseNotes || null,
+          release_url: sourceRepo || null,
           entity_picture: null,
           title: `${image}:${tag}`,
           progress: 0,
@@ -596,7 +600,7 @@ export default class HomeassistantService {
         updatePayload = {
           installed_version: `${tag}: ${currentDigest?.substring(0, 12)}`,
           latest_version: newDigest ? `${tag}: ${newDigest?.substring(0, 12)}` : null,
-          release_summary: "",
+          release_summary: releaseNotes || "",
           release_url: `${sourceRepo ? sourceRepo : "https://github.com/cqrt/MqDockerUp"}`,
           entity_picture: "https://raw.githubusercontent.com/cqrt/MqDockerUp/refs/heads/main/assets/logo_200x200.png",
           title: `${image}:${tag}`,

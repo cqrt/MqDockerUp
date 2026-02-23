@@ -129,6 +129,26 @@ export default class DockerService {
     }
   }
 
+  /**
+   * Gets the new docker image digest and release notes for the specified image name.
+   * @param imageName - The name of the Docker image.
+   * @param tag - The tag of the Docker image.
+   * @returns A promise that resolves to an object containing the new digest and optional release notes.
+   */
+  public static async getImageNewDigestWithReleaseNotes(imageName: string, tag: string): Promise<{ newDigest: string | null; releaseNotes?: string; }> {
+    try {
+      let adapter = ImageRegistryAdapterFactory.getAdapter(imageName, tag);
+      let response = await adapter.checkForNewDigest();
+
+      return { newDigest: response.newDigest, releaseNotes: response.releaseNotes };
+      
+    } catch (error: any) {
+      logger.error(imageName, tag);
+      logger.error(error);
+      return { newDigest: null };
+    }
+  }
+
 
   /**
    * Gets the private registry for the specified image name.
