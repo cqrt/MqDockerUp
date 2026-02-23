@@ -6,12 +6,14 @@ const config = ConfigService.getConfig();
 
 export class GithubAdapter extends ImageRegistryAdapter {
     private tag: string;
+    private accessToken: string | undefined;
 
     constructor(image: string, tag: string = 'latest') {
         const accessToken =  config?.accessTokens?.github;
 
         super(image, accessToken);
         this.tag = tag;
+        this.accessToken = accessToken;
 
         if (!accessToken) {
             logger.error('Github access token is not defined');
@@ -58,18 +60,27 @@ export class GithubAdapter extends ImageRegistryAdapter {
                     const [registry, user, image] = imageNameWithTag.split('/');
                     const releaseApiUrl = `https://api.github.com/repos/${user}/${image}/releases/latest`;
                     
+                    // Create headers for GitHub API - use plain token, not base64 encoded
+                    const githubHeaders: any = {
+                        'Accept': 'application/vnd.github+json',
+                        'X-GitHub-Api-Version': '2022-11-28'
+                    };
+                    
+                    // Add authorization if token is available
+                    if (this.accessToken) {
+                        githubHeaders['Authorization'] = `Bearer ${this.accessToken}`;
+                    }
+                    
                     const releaseResponse = await this.http.get(releaseApiUrl, {
-                        headers: {
-                            'Accept': 'application/vnd.github+json'
-                        }
+                        headers: githubHeaders
                     });
                     
                     if (releaseResponse.data && releaseResponse.data.body) {
                         releaseNotes = releaseResponse.data.body;
                         logger.info(`Fetched release notes for ${user}/${image}`);
                     }
-                } catch (releaseError) {
-                    logger.warn(`Could not fetch release notes for image: ${releaseError}`);
+                } catch (releaseError: any) {
+                    logger.warn(`Could not fetch release notes for image: ${releaseError.message || releaseError}`);
                     // Don't throw - release notes are optional
                 }
 
