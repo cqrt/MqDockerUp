@@ -116,11 +116,20 @@ export default class DockerService {
    * @returns A promise that resolves to a string containing the new digest.
    */
   public static async getImageNewDigest(imageName: string, tag: string): Promise<string | null> {
+      interface DigestResponse { newDigest: string; releaseNotes?: string }
     try {
       let adapter = ImageRegistryAdapterFactory.getAdapter(imageName, tag);
       let response = await adapter.checkForNewDigest();
 
-      return response.newDigest;
+      const responseWithNotes = response as DigestResponse;
+      return responseWithNotes.newDigest;
+      
+      // Store release notes if available
+      if (responseWithNotes.releaseNotes) {
+        // Store cleaned release notes without markdown formatting
+        const cleanNotes = responseWithNotes.releaseNotes!.replace(/[#*_~`]/g, '');
+        this.SourceUrlCache.set(`${imageName}:${tag}`, cleanNotes);
+      }
       
     } catch (error: any) {
       logger.error(imageName, tag);
