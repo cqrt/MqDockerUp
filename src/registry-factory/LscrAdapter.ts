@@ -34,12 +34,10 @@ export class LscrAdapter extends ImageRegistryAdapter {
         return `${LscrAdapter.DOCKER_API_URL}/${image}/tags?name=${this.tag}`;
     }
 
-    async checkForNewDigest(): Promise<{ newDigest: string; releaseNotes?: string; releaseUrl?: string; }> {
+    async checkForNewDigest(): Promise<{ newDigest: string; }> {
         try {
             let response = await this.http.get(this.getImageUrl());
             let newDigest = null;
-            let releaseNotes: string | undefined;
-            let releaseUrl: string | undefined;
 
             let images = response.data.results[0].images;
             if (images && images.length > 0) {
@@ -49,41 +47,10 @@ export class LscrAdapter extends ImageRegistryAdapter {
                 logger.error(response);
             }
 
-            // Try to fetch release notes from Docker Hub (lscr.io images are mirrored there)
-            try {
-                const repoInfo = await this.fetchRepositoryInfo();
-                if (repoInfo) {
-                    releaseNotes = repoInfo.description;
-                    releaseUrl = repoInfo.url;
-                }
-            } catch (error) {
-                logger.debug(`Could not fetch release notes for ${this.image}: ${error}`);
-            }
-
-            return { newDigest, releaseNotes, releaseUrl };
+            return { newDigest };
         } catch (error) {
             logger.error(`Failed to check for new lscr.io image digest: ${error}`);
             throw error;
-        }
-    }
-
-    private getRepositoryUrl(): string {
-        // lscr.io images are hosted on Docker Hub, remove the lscr.io prefix
-        const image = this.image.replace('lscr.io/', '');
-        return `${LscrAdapter.DOCKER_API_URL}/${image}`;
-    }
-
-    private async fetchRepositoryInfo(): Promise<{ description?: string; url?: string } | null> {
-        try {
-            const response = await this.http.get(this.getRepositoryUrl());
-            const data = response.data;
-            
-            return {
-                description: data.description || undefined,
-                url: data.url || undefined,
-            };
-        } catch (error) {
-            return null;
         }
     }
 }

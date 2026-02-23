@@ -50,12 +50,10 @@ export class DockerhubAdapter extends ImageRegistryAdapter {
         return `${DockerhubAdapter.DOCKER_API_URL}/${repoPath}/tags/${this.tag}`;
     }
     
-    async checkForNewDigest(): Promise<{ newDigest: string; releaseNotes?: string; releaseUrl?: string; }> {
+    async checkForNewDigest(): Promise<{ newDigest: string; }> {
         try {
             let response = await this.http.get(this.getImageUrl());
             let newDigest = null;
-            let releaseNotes: string | undefined;
-            let releaseUrl: string | undefined;
 
             let images = response.data.images;
             if (images && images.length > 0) {
@@ -65,51 +63,11 @@ export class DockerhubAdapter extends ImageRegistryAdapter {
                 logger.error(response);
             }
 
-            // Try to fetch release notes from Docker Hub repository info
-            try {
-                const repoInfo = await this.fetchRepositoryInfo();
-                if (repoInfo) {
-                    releaseNotes = repoInfo.description;
-                    releaseUrl = repoInfo.url;
-                }
-            } catch (error) {
-                logger.debug(`Could not fetch release notes for ${this.image}: ${error}`);
-            }
-
-            return { newDigest, releaseNotes, releaseUrl };
+            return { newDigest};
         } catch (error) {
             logger.error(`Failed to check for new Docker image digest: ${error}`);
             logger.warn(`This might be a locally generated image. To prevent similar issues, exclude it from future MqDockerUp checks (see docs)`);
             throw error;
-        }
-    }
-
-    private getRepositoryUrl(): string {
-        const parts = this.image.split("/");
-        let repoPath: string;
-
-        if (parts.length === 1) {
-            repoPath = `library/${parts[0]}`;
-        } else if (parts[0].includes(".") || parts[0].includes(":")) {
-            repoPath = parts.slice(1).join("/");
-        } else {
-            repoPath = parts.join("/");
-        }
-
-        return `${DockerhubAdapter.DOCKER_API_URL}/${repoPath}`;
-    }
-
-    private async fetchRepositoryInfo(): Promise<{ description?: string; url?: string } | null> {
-        try {
-            const response = await this.http.get(this.getRepositoryUrl());
-            const data = response.data;
-            
-            return {
-                description: data.description || undefined,
-                url: data.url || undefined,
-            };
-        } catch (error) {
-            return null;
         }
     }
 }
