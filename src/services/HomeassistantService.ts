@@ -575,11 +575,20 @@ export default class HomeassistantService {
 
       let updatePayload: any;
       if (haLegacy) {
+        // Determine the best release URL to use for legacy mode
+        let releaseUrl = sourceRepo;
+        if (!releaseUrl) {
+          const registry = await DockerService.getImageRegistryName(image);
+          if (registry === 'DockerHub') {
+            releaseUrl = `https://hub.docker.com/r/${image}`;
+          }
+        }
+        
         updatePayload = {
           installed_version: `${tag}: ${currentDigest?.substring(0, 12)}`,
           latest_version: newDigest ? `${tag}: ${newDigest?.substring(0, 12)}` : null,
           release_notes: releaseNotes || null,
-          release_url: sourceRepo || null,
+          release_url: releaseUrl || null,
           entity_picture: null,
           title: `${image}:${tag}`,
           progress: 0,
@@ -603,11 +612,23 @@ export default class HomeassistantService {
           }
         }
       } else {
+        // Determine the best release URL to use
+        let releaseUrl = sourceRepo;
+        if (!releaseUrl) {
+          // If no source repo found, try to construct a Docker Hub URL
+          const registry = await DockerService.getImageRegistryName(image);
+          if (registry === 'DockerHub') {
+            releaseUrl = `https://hub.docker.com/r/${image}`;
+          } else {
+            releaseUrl = "https://github.com/cqrt/MqDockerUp";
+          }
+        }
+        
         updatePayload = {
           installed_version: `${tag}: ${currentDigest?.substring(0, 12)}`,
           latest_version: newDigest ? `${tag}: ${newDigest?.substring(0, 12)}` : null,
           release_summary: releaseNotes || "",
-          release_url: `${sourceRepo ? sourceRepo : "https://github.com/cqrt/MqDockerUp"}`,
+          release_url: releaseUrl,
           entity_picture: "https://raw.githubusercontent.com/cqrt/MqDockerUp/refs/heads/main/assets/logo_200x200.png",
           title: `${image}:${tag}`,
           in_progress: false,
