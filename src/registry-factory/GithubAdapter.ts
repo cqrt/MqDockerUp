@@ -44,7 +44,7 @@ export class GithubAdapter extends ImageRegistryAdapter {
         return `https://${registry}/v2/${user}/${image}/manifests/${this.tag}`;
     }
 
-    async checkForNewDigest(): Promise<{ newDigest: string; releaseNotes?: string; }> {
+    async checkForNewDigest(): Promise<{ newDigest: string; releaseNotes?: string; repoUrl?: string; }> {
         const accessTokenSet = !!config?.accessTokens?.github;
         if (accessTokenSet) {
             try {
@@ -55,10 +55,12 @@ export class GithubAdapter extends ImageRegistryAdapter {
 
                 // Fetch release notes from GitHub API
                 let releaseNotes: string | undefined = undefined;
+                let repoUrl: string | undefined = undefined;
                 try {
                     const imageNameWithTag = this.image.split(':')[0];
                     const [registry, user, image] = imageNameWithTag.split('/');
                     const releaseApiUrl = `https://api.github.com/repos/${user}/${image}/releases/latest`;
+                    repoUrl = `https://github.com/${user}/${image}`;
                     
                     // Create headers for GitHub API - use plain token, not base64 encoded
                     const githubHeaders: any = {
@@ -84,7 +86,7 @@ export class GithubAdapter extends ImageRegistryAdapter {
                     // Don't throw - release notes are optional
                 }
 
-                return { newDigest, releaseNotes };
+                return { newDigest, releaseNotes, repoUrl };
             } catch (error) {
                 logger.error(`Failed to check for new Github image digest: ${error}`);
                 throw error;

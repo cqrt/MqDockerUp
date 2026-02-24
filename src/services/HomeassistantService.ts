@@ -535,11 +535,13 @@ export default class HomeassistantService {
     const repoDigests = imageInfo?.RepoDigests || [];
     let currentDigest: string | null = null, newDigest: string | null = null;
     let releaseNotes: string | undefined = undefined;
+    let repoUrlFromRelease: string | undefined = undefined;
 
     // Get digest and release notes
     const digestInfo = await DockerService.getImageNewDigestWithReleaseNotes(image, tag);
     newDigest = digestInfo.newDigest;
     releaseNotes = digestInfo.releaseNotes;
+    repoUrlFromRelease = digestInfo.repoUrl;
 
     if (!newDigest) {
       logger.warn(`Failed to find new digest for image ${image}:${tag}`);
@@ -559,9 +561,13 @@ export default class HomeassistantService {
 
       // Update entity payload
       const updateTopic = `${config.mqtt.topic}/${formatedImage}/update`;
-      const sourceRepo = await DockerService.getSourceRepo(image, tag);
-
-      if (sourceRepo) {
+      let sourceRepo = await DockerService.getSourceRepo(image, tag);
+      
+      // If we couldn't find the source repo but we have it from the release API, use that
+      if (!sourceRepo && repoUrlFromRelease) {
+        sourceRepo = repoUrlFromRelease;
+        logger.info(`Using repository URL from release API: ${sourceRepo}`);
+      } else if (sourceRepo) {
         logger.info(`Found source repository: ${sourceRepo}`);
       } else {
         logger.warn(`Could not find source repository for ${image}`);

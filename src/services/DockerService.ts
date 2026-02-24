@@ -135,12 +135,12 @@ export default class DockerService {
    * @param tag - The tag of the Docker image.
    * @returns A promise that resolves to an object containing the new digest and optional release notes.
    */
-  public static async getImageNewDigestWithReleaseNotes(imageName: string, tag: string): Promise<{ newDigest: string | null; releaseNotes?: string; }> {
+  public static async getImageNewDigestWithReleaseNotes(imageName: string, tag: string): Promise<{ newDigest: string | null; releaseNotes?: string; repoUrl?: string; }> {
     try {
       let adapter = ImageRegistryAdapterFactory.getAdapter(imageName, tag);
       let response = await adapter.checkForNewDigest();
 
-      return { newDigest: response.newDigest, releaseNotes: response.releaseNotes };
+      return { newDigest: response.newDigest, releaseNotes: response.releaseNotes, repoUrl: response.repoUrl };
       
     } catch (error: any) {
       logger.error(imageName, tag);
