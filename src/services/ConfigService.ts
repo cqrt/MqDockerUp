@@ -65,6 +65,13 @@ export default class ConfigService {
           dockerhub: "",
           github: "",
         },
+        applicationApis: {
+          radarr: {
+            enabled: true,
+            apiKey: "",
+            baseUrl: ""
+          }
+        },
         ignore: {
           containers: "",
           updates: ""

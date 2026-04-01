@@ -547,17 +547,32 @@ export default class HomeassistantService {
     // If no release notes from registry, try to get from application API
     if (!releaseNotes) {
       const containerName = container.Name.substring(1); // Remove leading slash
-      const appAdapter = ApplicationApiAdapterFactory.getAdapter(containerName, image);
+      const adapterName = ApplicationApiAdapterFactory.getAdapterName(containerName, image);
       
-      if (appAdapter) {
-        try {
-          const appUpdateInfo = await appAdapter.fetchUpdateInfo();
-          if (appUpdateInfo && appUpdateInfo.releaseNotes) {
-            releaseNotes = appUpdateInfo.releaseNotes;
-            logger.info(`Fetched release notes from ${ApplicationApiAdapterFactory.getAdapterName(containerName, image)} API for ${containerName}`);
+      if (adapterName) {
+        // Get configuration for this application
+        const appConfig = config?.applicationApis?.[adapterName.toLowerCase()];
+        const isEnabled = appConfig?.enabled !== false; // Default to true if not specified
+        
+        if (isEnabled) {
+          const apiKey = appConfig?.apiKey || undefined;
+          const baseUrl = appConfig?.baseUrl || undefined;
+          
+          const appAdapter = ApplicationApiAdapterFactory.getAdapter(containerName, image, apiKey, baseUrl);
+          
+          if (appAdapter) {
+            try {
+              const appUpdateInfo = await appAdapter.fetchUpdateInfo();
+              if (appUpdateInfo && appUpdateInfo.releaseNotes) {
+                releaseNotes = appUpdateInfo.releaseNotes;
+                logger.info(`Fetched release notes from ${adapterName} API for ${containerName}`);
+              }
+            } catch (error: any) {
+              logger.debug(`Failed to fetch application API release notes for ${containerName}: ${error.message}`);
+            }
           }
-        } catch (error: any) {
-          logger.debug(`Failed to fetch application API release notes for ${containerName}: ${error.message}`);
+        } else {
+          logger.debug(`Application API adapter for ${adapterName} is disabled in configuration`);
         }
       }
     }

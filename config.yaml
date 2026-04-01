@@ -24,6 +24,20 @@ accessTokens:
   dockerhub: ""
   github: ""
 
+# Application API Configuration
+# Configure API keys and settings for fetching release notes from application APIs
+applicationApis:
+  radarr:
+    enabled: true
+    apiKey: "e3858609dd524dd1b8760d2c2d46cf39"  # Get from Radarr Settings > General > Security > API Key
+    # baseUrl: "http://radarr:7878"  # Optional: Override auto-detected URL
+  # sonarr:
+  #   enabled: true
+  #   apiKey: ""
+  # prowlarr:
+  #   enabled: true
+  #   apiKey: ""
+
 # Ignore Configuration
 ignore:
   containers: ""
