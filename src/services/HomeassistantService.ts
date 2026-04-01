@@ -4,6 +4,7 @@ import DatabaseService from "./DatabaseService";
 import logger from "./LoggerService"
 import {ContainerInspectInfo, ContainerInfo} from "dockerode";
 import IgnoreService from "./IgnoreService";
+import { ApplicationApiAdapterFactory } from "../app-api-factory/ApplicationApiAdapterFactory";
 
 const config = ConfigService.getConfig();
 const packageJson = require("../../package");
@@ -537,11 +538,29 @@ export default class HomeassistantService {
     let releaseNotes: string | undefined = undefined;
     let repoUrlFromRelease: string | undefined = undefined;
 
-    // Get digest and release notes
+    // Get digest and release notes from registry
     const digestInfo = await DockerService.getImageNewDigestWithReleaseNotes(image, tag);
     newDigest = digestInfo.newDigest;
     releaseNotes = digestInfo.releaseNotes;
     repoUrlFromRelease = digestInfo.repoUrl;
+
+    // If no release notes from registry, try to get from application API
+    if (!releaseNotes) {
+      const containerName = container.Name.substring(1); // Remove leading slash
+      const appAdapter = ApplicationApiAdapterFactory.getAdapter(containerName, image);
+      
+      if (appAdapter) {
+        try {
+          const appUpdateInfo = await appAdapter.fetchUpdateInfo();
+          if (appUpdateInfo && appUpdateInfo.releaseNotes) {
+            releaseNotes = appUpdateInfo.releaseNotes;
+            logger.info(`Fetched release notes from ${ApplicationApiAdapterFactory.getAdapterName(containerName, image)} API for ${containerName}`);
+          }
+        } catch (error: any) {
+          logger.debug(`Failed to fetch application API release notes for ${containerName}: ${error.message}`);
+        }
+      }
+    }
 
     if (!newDigest) {
       logger.warn(`Failed to find new digest for image ${image}:${tag}`);
