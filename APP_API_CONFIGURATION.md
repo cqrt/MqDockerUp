@@ -146,7 +146,7 @@ Currently, the application API adapters:
 
 ### API Authentication Required
 
-If you see `Radarr API authentication failed`, the application requires an API key. This will be configurable in a future update.
+If you see `Radarr API authentication failed`, the application requires an API key.
 
 ## Adding More Applications
 
