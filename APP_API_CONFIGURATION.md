@@ -19,7 +19,29 @@ MqDockerUp now supports fetching release notes from application-specific APIs as
 ### Radarr
 - **Detection**: Container name or image contains "radarr"
 - **API Endpoint**: `http://{container-name}:7878/api/v3/update`
-- **Authentication**: Optional API key via `X-Api-Key` header
+- **Default Port**: 7878
+- **Authentication**: API key via `X-Api-Key` header
+- **Release Notes Format**: Includes version, release date, new features, and bug fixes
+
+### Sonarr
+- **Detection**: Container name or image contains "sonarr"
+- **API Endpoint**: `http://{container-name}:8989/api/v3/update`
+- **Default Port**: 8989
+- **Authentication**: API key via `X-Api-Key` header
+- **Release Notes Format**: Includes version, release date, new features, and bug fixes
+
+### Lidarr
+- **Detection**: Container name or image contains "lidarr"
+- **API Endpoint**: `http://{container-name}:8686/api/v1/update`
+- **Default Port**: 8686
+- **Authentication**: API key via `X-Api-Key` header
+- **Release Notes Format**: Includes version, release date, new features, and bug fixes
+
+### Readarr
+- **Detection**: Container name or image contains "readarr"
+- **API Endpoint**: `http://{container-name}:8787/api/v1/update`
+- **Default Port**: 8787
+- **Authentication**: API key via `X-Api-Key` header
 - **Release Notes Format**: Includes version, release date, new features, and bug fixes
 
 ## Network Requirements
@@ -61,22 +83,37 @@ networks:
     driver: bridge
 ```
 
-## Configuration Options (Future Enhancement)
+## Configuration
 
-In a future update, you'll be able to configure application API settings in `config.yaml`:
+Configure application API settings in `config.yaml`:
 
 ```yaml
-# Future configuration example
 applicationApis:
   radarr:
     enabled: true
-    apiKey: "your-api-key-here"  # Optional
-    baseUrl: "http://radarr:7878"  # Optional, auto-detected by default
+    apiKey: "your-radarr-api-key"
+    # baseUrl: "http://radarr:7878"  # Optional override
   sonarr:
     enabled: true
-    apiKey: "your-api-key-here"
-    baseUrl: "http://sonarr:8989"
+    apiKey: "your-sonarr-api-key"
+    # baseUrl: "http://sonarr:8989"
+  lidarr:
+    enabled: true
+    apiKey: "your-lidarr-api-key"
+    # baseUrl: "http://lidarr:8686"
+  readarr:
+    enabled: true
+    apiKey: "your-readarr-api-key"
+    # baseUrl: "http://readarr:8787"
 ```
+
+### Getting API Keys
+
+For each *arr application:
+1. Open the application's web interface
+2. Go to **Settings** → **General** → **Security**
+3. Copy the **API Key**
+4. Add it to your `config.yaml`
 
 ## Current Behavior
 

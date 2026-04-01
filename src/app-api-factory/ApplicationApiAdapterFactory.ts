@@ -1,13 +1,19 @@
 import { ApplicationApiAdapter } from './ApplicationApiAdapter';
 import { RadarrAdapter } from './RadarrAdapter';
+import { SonarrAdapter } from './SonarrAdapter';
+import { LidarrAdapter } from './LidarrAdapter';
+import { ReadarrAdapter } from './ReadarrAdapter';
 import logger from '../services/LoggerService';
 
 export class ApplicationApiAdapterFactory {
     private static adapters = [
         RadarrAdapter,
+        SonarrAdapter,
+        LidarrAdapter,
+        ReadarrAdapter,
         // Add more adapters here as they are implemented
-        // SonarrAdapter,
         // ProwlarrAdapter,
+        // BazarrAdapter,
         // etc.
     ];
 

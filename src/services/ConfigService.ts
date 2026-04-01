@@ -70,6 +70,21 @@ export default class ConfigService {
             enabled: true,
             apiKey: "",
             baseUrl: ""
+          },
+          sonarr: {
+            enabled: true,
+            apiKey: "",
+            baseUrl: ""
+          },
+          lidarr: {
+            enabled: true,
+            apiKey: "",
+            baseUrl: ""
+          },
+          readarr: {
+            enabled: true,
+            apiKey: "",
+            baseUrl: ""
           }
         },
         ignore: {
