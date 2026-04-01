@@ -31,12 +31,17 @@ applicationApis:
     enabled: true
     apiKey: "e3858609dd524dd1b8760d2c2d46cf39"  # Get from Radarr Settings > General > Security > API Key
     # baseUrl: "http://radarr:7878"  # Optional: Override auto-detected URL
-  # sonarr:
-  #   enabled: true
-  #   apiKey: ""
-  # prowlarr:
-  #   enabled: true
-  #   apiKey: ""
+  sonarr:
+    enabled: true
+    apiKey: "5228e9a3fcb14a85920e13a1ab3fe99c"
+  lidarr:
+    enabled: true
+    apiKey: "dc53320ad4db4473856d8c7b5427f8a5"
+  readarr:
+    enabled: true
+    apiKey: "487e75ede02e4056af35c1fc3e21caf6"
+    baseUrl: "http://host.docker.internal:6969"  # Optional: Override auto-detected URL
+
 
 # Ignore Configuration
 ignore:
