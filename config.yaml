@@ -41,6 +41,14 @@ applicationApis:
     enabled: true
     apiKey: "487e75ede02e4056af35c1fc3e21caf6"
     baseUrl: "http://host.docker.internal:6969"  # Optional: Override auto-detected URL
+  prowlarr:
+    enabled: true
+    apiKey: "98da3dbb66554c2ca3b30cd1c38c5a4c"  # Get from Prowlarr Settings > General > Security > API Key
+    baseUrl: "http://prowlarr:9797"
+  bazarr:
+    enabled: true
+    apiKey: "157aef260cf2133b79feca02c2ffacb8"  # Get from Bazarr Settings > General > Security > API Key
+    # baseUrl: "http://bazarr:6767"
 
 
 # Ignore Configuration

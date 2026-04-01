@@ -3,6 +3,8 @@ import { RadarrAdapter } from './RadarrAdapter';
 import { SonarrAdapter } from './SonarrAdapter';
 import { LidarrAdapter } from './LidarrAdapter';
 import { ReadarrAdapter } from './ReadarrAdapter';
+import { ProwlarrAdapter } from './ProwlarrAdapter';
+import { BazarrAdapter } from './BazarrAdapter';
 import logger from '../services/LoggerService';
 
 export class ApplicationApiAdapterFactory {
@@ -11,10 +13,9 @@ export class ApplicationApiAdapterFactory {
         SonarrAdapter,
         LidarrAdapter,
         ReadarrAdapter,
+        ProwlarrAdapter,
+        BazarrAdapter,
         // Add more adapters here as they are implemented
-        // ProwlarrAdapter,
-        // BazarrAdapter,
-        // etc.
     ];
 
     /**

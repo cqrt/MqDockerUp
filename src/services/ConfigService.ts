@@ -85,6 +85,16 @@ export default class ConfigService {
             enabled: true,
             apiKey: "",
             baseUrl: ""
+          },
+          prowlarr: {
+            enabled: true,
+            apiKey: "",
+            baseUrl: ""
+          },
+          bazarr: {
+            enabled: true,
+            apiKey: "",
+            baseUrl: ""
           }
         },
         ignore: {
