@@ -22,12 +22,20 @@ export class BazarrAdapter extends ApplicationApiAdapter {
     }
 
     protected getApiUrl(): string {
+        let url: string;
         if (this.baseUrl) {
-            return `${this.baseUrl}/api/system/releases`;
+            url = `${this.baseUrl}/api/system/releases`;
+        } else {
+            // Default to localhost with common Bazarr port
+            url = `http://${this.containerName}:6767/api/system/releases`;
         }
         
-        // Default to localhost with common Bazarr port
-        return `http://${this.containerName}:6767/api/system/releases`;
+        // Bazarr uses query parameter for API key
+        if (this.apiKey) {
+            url += `?apikey=${this.apiKey}`;
+        }
+        
+        return url;
     }
 
     protected formatReleaseNotes(releases: BazarrRelease[]): string {
@@ -52,15 +60,10 @@ export class BazarrAdapter extends ApplicationApiAdapter {
     async fetchUpdateInfo(): Promise<AppUpdateInfo | null> {
         try {
             const url = this.getApiUrl();
-            const headers: any = {};
+            // Bazarr uses query parameter for auth, not headers
+            logger.debug(`Fetching Bazarr releases from: ${url.replace(/apikey=[^&]+/, 'apikey=***')}`);
             
-            if (this.apiKey) {
-                headers['X-API-KEY'] = this.apiKey;
-            }
-
-            logger.debug(`Fetching Bazarr releases from: ${url}`);
-            
-            const response = await this.http.get<BazarrRelease[]>(url, { headers });
+            const response = await this.http.get<BazarrRelease[]>(url);
             
             if (!response.data || response.data.length === 0) {
                 logger.warn(`No release information available for Bazarr container: ${this.containerName}`);
