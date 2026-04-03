@@ -61,6 +61,8 @@ services:
   mqdockerup:
     image: ghcr.io/cqrt/mqdockerup:latest
     container_name: mqdockerup
+    env_file:
+      - .env  # API keys and secrets live here, not in compose
     networks:
       - media_network  # Same network as your applications
     volumes:
@@ -83,31 +85,49 @@ networks:
     driver: bridge
 ```
 
+> **Important:** Copy `.env.example` to `.env` and fill in your API keys there. The `.env` file is git-ignored so your secrets won't be committed.
+
 ## Configuration
 
 API keys can be configured either via `config.yaml` or via environment variables (recommended for Docker Compose deployments).
 
-### Option 1: Environment Variables (Recommended)
+### Option 1: `.env` file (Recommended)
 
-Set API keys directly in your `docker-compose.yml` using the format `APPLICATIONAPIS_<APP>_<KEY>`:
+Use a `.env` file to keep secrets out of your compose file and version control:
+
+1. Copy the example: `cp .env.example .env`
+2. Fill in your API keys in `.env`
+3. Reference it from your compose file with `env_file: .env`
+
+```ini
+# .env
+MQTT_CONNECTIONURI=mqtt://broker:1883
+MQTT_PASSWORD=your-mqtt-password
+ACCESSTOKENS_GITHUB=ghp_your_token_here
+
+# Application API keys
+APPLICATIONAPIS_RADARR_APIKEY=your-radarr-api-key
+APPLICATIONAPIS_SONARR_APIKEY=your-sonarr-api-key
+APPLICATIONAPIS_BAZARR_APIKEY=your-bazarr-api-key
+```
 
 ```yaml
+# docker-compose.yml
 services:
   mqdockerup:
     image: cqrt/mqdockerup
+    env_file:
+      - .env
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - MQTT_CONNECTIONURI=mqtt://broker:1883
-      # Application API keys
-      - APPLICATIONAPIS_RADARR_APIKEY=your-radarr-api-key
-      - APPLICATIONAPIS_SONARR_APIKEY=your-sonarr-api-key
-      - APPLICATIONAPIS_LIDARR_APIKEY=your-lidarr-api-key
-      - APPLICATIONAPIS_READARR_APIKEY=your-readarr-api-key
-      - APPLICATIONAPIS_PROWLARR_APIKEY=your-prowlarr-api-key
-      - APPLICATIONAPIS_BAZARR_APIKEY=your-bazarr-api-key
-      # Optional: override base URLs
-      - APPLICATIONAPIS_RADARR_BASEURL=http://radarr:7878
-      # Optional: disable specific adapters
-      - APPLICATIONAPIS_BAZARR_ENABLED=false
+      - MQTT_USERNAME=${MQTT_USERNAME}
+      - MQTT_PASSWORD=${MQTT_PASSWORD}
+      - ACCESSTOKENS_GITHUB=${ACCESSTOKENS_GITHUB}
+      - APPLICATIONAPIS_RADARR_APIKEY=${APPLICATIONAPIS_RADARR_APIKEY}
+      - APPLICATIONAPIS_SONARR_APIKEY=${APPLICATIONAPIS_SONARR_APIKEY}
+      - APPLICATIONAPIS_BAZARR_APIKEY=${APPLICATIONAPIS_BAZARR_APIKEY}
 ```
 
 Available environment variables per application:
@@ -160,7 +180,7 @@ For each *arr application:
 1. Open the application's web interface
 2. Go to **Settings** -> **General** -> **Security**
 3. Copy the **API Key**
-4. Add it to your Docker Compose environment or `config.yaml`
+4. Add it to your `.env` file or `config.yaml`
 
 ## Current Behavior
 

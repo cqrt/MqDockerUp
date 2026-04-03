@@ -2,14 +2,20 @@ version: "3.9"
 services:
   mqdockerup:
     image: micrib/mqdockerup
+    env_file:
+      - .env
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - MQTT_CONNECTIONURI=mqtt://broker:1883
+      - MQTT_USERNAME=${MQTT_USERNAME}
+      - MQTT_PASSWORD=${MQTT_PASSWORD}
+      - ACCESSTOKENS_GITHUB=${ACCESSTOKENS_GITHUB}
+      - ACCESSTOKENS_DOCKERHUB=${ACCESSTOKENS_DOCKERHUB}
       # Application API keys (optional) - for fetching release notes
-      # - APPLICATIONAPIS_RADARR_APIKEY=your-radarr-api-key
-      # - APPLICATIONAPIS_SONARR_APIKEY=your-sonarr-api-key
-      # - APPLICATIONAPIS_LIDARR_APIKEY=your-lidarr-api-key
-      # - APPLICATIONAPIS_READARR_APIKEY=your-readarr-api-key
-      # - APPLICATIONAPIS_PROWLARR_APIKEY=your-prowlarr-api-key
-      # - APPLICATIONAPIS_BAZARR_APIKEY=your-bazarr-api-key
+      - APPLICATIONAPIS_RADARR_APIKEY=${APPLICATIONAPIS_RADARR_APIKEY}
+      - APPLICATIONAPIS_SONARR_APIKEY=${APPLICATIONAPIS_SONARR_APIKEY}
+      - APPLICATIONAPIS_LIDARR_APIKEY=${APPLICATIONAPIS_LIDARR_APIKEY}
+      - APPLICATIONAPIS_READARR_APIKEY=${APPLICATIONAPIS_READARR_APIKEY}
+      - APPLICATIONAPIS_PROWLARR_APIKEY=${APPLICATIONAPIS_PROWLARR_APIKEY}
+      - APPLICATIONAPIS_BAZARR_APIKEY=${APPLICATIONAPIS_BAZARR_APIKEY}

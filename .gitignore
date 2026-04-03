@@ -28,3 +28,8 @@ node_modules/
 
 /config
 /emqx
+
+# Environment files (contain secrets)
+.env
+.env.local
+.env.*.local
