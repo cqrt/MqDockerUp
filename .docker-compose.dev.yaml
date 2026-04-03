@@ -62,6 +62,16 @@ services:
       - MAIN_INTERVAL=5m
       - MQTT_CONNECTIONURI=mqtt://emqx:1883
       - ACCESSTOKENS_GITHUB=
+      # Application API keys - for fetching release notes from app APIs
+      # - APPLICATIONAPIS_RADARR_APIKEY=
+      # - APPLICATIONAPIS_SONARR_APIKEY=
+      # - APPLICATIONAPIS_LIDARR_APIKEY=
+      # - APPLICATIONAPIS_READARR_APIKEY=
+      # - APPLICATIONAPIS_PROWLARR_APIKEY=
+      # - APPLICATIONAPIS_BAZARR_APIKEY=
+      # Optional: override base URLs
+      # - APPLICATIONAPIS_RADARR_BASEURL=http://radarr:7878
+      # - APPLICATIONAPIS_BAZARR_BASEURL=http://bazarr:6767
     depends_on:
       homeassistant:
         condition: service_started

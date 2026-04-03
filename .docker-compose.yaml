@@ -6,3 +6,10 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - MQTT_CONNECTIONURI=mqtt://broker:1883
+      # Application API keys (optional) - for fetching release notes
+      # - APPLICATIONAPIS_RADARR_APIKEY=your-radarr-api-key
+      # - APPLICATIONAPIS_SONARR_APIKEY=your-sonarr-api-key
+      # - APPLICATIONAPIS_LIDARR_APIKEY=your-lidarr-api-key
+      # - APPLICATIONAPIS_READARR_APIKEY=your-readarr-api-key
+      # - APPLICATIONAPIS_PROWLARR_APIKEY=your-prowlarr-api-key
+      # - APPLICATIONAPIS_BAZARR_APIKEY=your-bazarr-api-key

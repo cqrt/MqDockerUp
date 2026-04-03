@@ -85,7 +85,44 @@ networks:
 
 ## Configuration
 
-Configure application API settings in `config.yaml`:
+API keys can be configured either via `config.yaml` or via environment variables (recommended for Docker Compose deployments).
+
+### Option 1: Environment Variables (Recommended)
+
+Set API keys directly in your `docker-compose.yml` using the format `APPLICATIONAPIS_<APP>_<KEY>`:
+
+```yaml
+services:
+  mqdockerup:
+    image: micrib/mqdockerup
+    environment:
+      - MQTT_CONNECTIONURI=mqtt://broker:1883
+      # Application API keys
+      - APPLICATIONAPIS_RADARR_APIKEY=your-radarr-api-key
+      - APPLICATIONAPIS_SONARR_APIKEY=your-sonarr-api-key
+      - APPLICATIONAPIS_LIDARR_APIKEY=your-lidarr-api-key
+      - APPLICATIONAPIS_READARR_APIKEY=your-readarr-api-key
+      - APPLICATIONAPIS_PROWLARR_APIKEY=your-prowlarr-api-key
+      - APPLICATIONAPIS_BAZARR_APIKEY=your-bazarr-api-key
+      # Optional: override base URLs
+      - APPLICATIONAPIS_RADARR_BASEURL=http://radarr:7878
+      # Optional: disable specific adapters
+      - APPLICATIONAPIS_BAZARR_ENABLED=false
+```
+
+Available environment variables per application:
+
+| Variable | Description |
+|---|---|
+| `APPLICATIONAPIS_<APP>_ENABLED` | Enable/disable the adapter (`true`/`false`) |
+| `APPLICATIONAPIS_<APP>_APIKEY` | API key for authentication |
+| `APPLICATIONAPIS_<APP>_BASEURL` | Override the auto-detected base URL |
+
+Where `<APP>` is one of: `RADARR`, `SONARR`, `LIDARR`, `READARR`, `PROWLARR`, `BAZARR`.
+
+Environment variables take precedence over values in `config.yaml`.
+
+### Option 2: config.yaml
 
 ```yaml
 applicationApis:
@@ -105,15 +142,25 @@ applicationApis:
     enabled: true
     apiKey: "your-readarr-api-key"
     # baseUrl: "http://readarr:8787"
+  prowlarr:
+    enabled: true
+    apiKey: "your-prowlarr-api-key"
+    # baseUrl: "http://prowlarr:9696"
+  bazarr:
+    enabled: true
+    apiKey: "your-bazarr-api-key"
+    # baseUrl: "http://bazarr:6767"
 ```
+
+> **Note:** Avoid committing API keys to version control. Prefer environment variables or use a `.env` file with your Docker Compose setup.
 
 ### Getting API Keys
 
 For each *arr application:
 1. Open the application's web interface
-2. Go to **Settings** → **General** → **Security**
+2. Go to **Settings** -> **General** -> **Security**
 3. Copy the **API Key**
-4. Add it to your `config.yaml`
+4. Add it to your Docker Compose environment or `config.yaml`
 
 ## Current Behavior
 
