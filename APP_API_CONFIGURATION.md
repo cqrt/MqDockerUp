@@ -94,7 +94,7 @@ Set API keys directly in your `docker-compose.yml` using the format `APPLICATION
 ```yaml
 services:
   mqdockerup:
-    image: micrib/mqdockerup
+    image: cqrt/mqdockerup
     environment:
       - MQTT_CONNECTIONURI=mqtt://broker:1883
       # Application API keys
