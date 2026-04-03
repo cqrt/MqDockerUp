@@ -8,6 +8,29 @@
 # MqDockerUp
 MqDockerUp is a tool that allows you to monitor and update your docker containers using MQTT and homeassistant. It can publish information about your containers, such as name, status, image, ports, etc., to an MQTT broker, and create or update corresponding entities in homeassistant. You can also send commands to start, stop, pause, unpause, restart, or remove your containers via MQTT or homeassistant. It even creates update entities in Homeassistant to make it easy to update your running containers. MqDockerUp is easy to set up and configure, and supports multiple platforms and architectures. With MqDockerUp, you can have a unified and convenient way to manage your docker containers from anywhere.
 
+## Table of Contents
+
+- [How it works](#how-it-works)
+- [How to use](#how-to-use)
+  - [Standalone application](#standalone-application)
+  - [Docker](#docker)
+    - [Notable Path/Binds/Volumes](#notable-pathbindsvolumes)
+- [Configuration](#configuration)
+  - [Main Configuration](#main-configuration)
+  - [`[Unit]`](#unit)
+  - [MQTT Configuration](#mqtt-configuration)
+  - [Access Tokens Configuration](#access-tokens-configuration)
+  - [Ignore Configuration](#ignore-configuration)
+  - [Logs Configuration](#logs-configuration)
+- [Config Examples](#config-examples)
+  - [`config.yaml`](#yaml)
+  - [Docker run](#run)
+  - [Docker Compose](#compose)
+- [Labels](#labels)
+- [Release Notes Implementation](#release-notes-implementation)
+- [Home Assistant Screenshots](#home-assistant-screenshots)
+- [Contribute](#contribute)
+
 ## How it works
 
 MqDockerUp uses various Docker Registry APIs (DockerHub/GHCR/LSCR) to get information about containers and images. It then makes a request to the Docker Hub API to get information about the latest image tags. If there is a new version, it will publish the change to a specified MQTT broker.
@@ -233,6 +256,9 @@ You can use some of these labels on individual containers to apply to them the e
 |  `mqdockerup.ignore_container` | `boolean` | Optional | `true` to ignore the container that have this label, `false` to not ignore                |
 |    `mqdockerup.ignore_updates` | `boolean` | Optional | `true` to ignore the updates of the container that have this label, `false` to not ignore |
 
+## Release Notes Implementation
+
+This [implementation](./RELEASE_NOTES_IMPLEMENTATION.md) adds support for extracting and displaying GitHub Container Repository (ghcr.io) release notes in Home Assistant when MqDockerUp detects container updates. [Additional configuration](./APP_API_CONFIGURATION.md) is also available to extract release notes from *arr app APIs, i.e. Radarr, Sonarr etc.
 
 ## Home Assistant Screenshots
 
