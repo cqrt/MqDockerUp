@@ -82,11 +82,3 @@ To test the implementation:
 2. Monitor a container from ghcr.io that has GitHub releases
 3. When an update is detected, check the Home Assistant update entity
 4. The release notes should appear in the entity details
-
-## Future Enhancements
-
-Potential improvements:
-- Add release notes support for Docker Hub (if available via their API)
-- Cache release notes to reduce API calls
-- Support for release notes from other registries
-- Markdown rendering in Home Assistant
