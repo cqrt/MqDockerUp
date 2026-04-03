@@ -249,10 +249,3 @@ Release notes are fetched in this order:
 2. **Application API** - From the application's own update endpoint
 3. **None** - If neither source is available
 
-## Benefits
-
-- ✅ Get release notes for LinuxServer.io containers
-- ✅ No additional configuration required (auto-detection)
-- ✅ Graceful fallback if application is unreachable
-- ✅ Works alongside existing GitHub release notes
-- ✅ Clean, organized architecture for future expansion
