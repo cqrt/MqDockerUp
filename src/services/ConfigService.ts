@@ -145,6 +145,23 @@ export default class ConfigService {
         }
       }
 
+      // Override applicationApis values with environment variables
+      // Format: APPLICATIONAPIS_<APP>_<KEY> e.g. APPLICATIONAPIS_BAZARR_APIKEY
+      if (!config.applicationApis) {
+        config.applicationApis = {};
+      }
+      for (const appName of Object.keys(defaults.applicationApis)) {
+        if (!config.applicationApis[appName]) {
+          config.applicationApis[appName] = {};
+        }
+        for (const key of Object.keys(defaults.applicationApis[appName as keyof typeof defaults.applicationApis])) {
+          const envKey = process.env[`APPLICATIONAPIS_${appName.toUpperCase()}_${key.toUpperCase()}`];
+          if (envKey !== undefined) {
+            config.applicationApis[appName][key] = envKey;
+          }
+        }
+      }
+
       // #region "Deprecation Messages"
 
       if (config.main["interval"] !== undefined) {

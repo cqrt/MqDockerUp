@@ -9,6 +9,11 @@ interface BazarrRelease {
     current?: boolean;
 }
 
+// Bazarr API wraps responses in a data envelope
+interface BazarrApiResponse {
+    data: BazarrRelease[];
+}
+
 export class BazarrAdapter extends ApplicationApiAdapter {
     static get displayName(): string {
         return 'Bazarr';
@@ -30,12 +35,19 @@ export class BazarrAdapter extends ApplicationApiAdapter {
             url = `http://${this.containerName}:6767/api/system/releases`;
         }
         
-        // Bazarr uses query parameter for API key
-        if (this.apiKey) {
-            url += `?apikey=${this.apiKey}`;
-        }
-        
         return url;
+    }
+
+    /**
+     * Build request headers for Bazarr API.
+     * Modern Bazarr uses X-API-KEY header for authentication.
+     */
+    protected getHeaders(): Record<string, string> {
+        const headers: Record<string, string> = {};
+        if (this.apiKey) {
+            headers['X-API-KEY'] = this.apiKey;
+        }
+        return headers;
     }
 
     protected formatReleaseNotes(releases: BazarrRelease[]): string {
@@ -60,18 +72,24 @@ export class BazarrAdapter extends ApplicationApiAdapter {
     async fetchUpdateInfo(): Promise<AppUpdateInfo | null> {
         try {
             const url = this.getApiUrl();
-            // Bazarr uses query parameter for auth, not headers
-            logger.debug(`Fetching Bazarr releases from: ${url.replace(/apikey=[^&]+/, 'apikey=***')}`);
+            logger.debug(`Fetching Bazarr releases from: ${url}`);
             
-            const response = await this.http.get<BazarrRelease[]>(url);
+            const headers = this.getHeaders();
+            const response = await this.http.get<BazarrApiResponse | BazarrRelease[]>(url, { headers });
             
-            if (!response.data || response.data.length === 0) {
+            // Bazarr API wraps responses in a { data: [...] } envelope.
+            // Handle both formats for resilience.
+            const releases: BazarrRelease[] = Array.isArray(response.data)
+                ? response.data
+                : (response.data as BazarrApiResponse)?.data || [];
+            
+            if (!releases || releases.length === 0) {
                 logger.warn(`No release information available for Bazarr container: ${this.containerName}`);
                 return null;
             }
 
-            const latestRelease = response.data.find(r => !r.prerelease) || response.data[0];
-            const releaseNotes = this.formatReleaseNotes(response.data);
+            const latestRelease = releases.find(r => !r.prerelease) || releases[0];
+            const releaseNotes = this.formatReleaseNotes(releases);
 
             logger.info(`Successfully fetched Bazarr release info for ${this.containerName}`);
 
