@@ -160,6 +160,7 @@ Here some examples with all variables defaults:
 docker run -d \
   --restart always \
   --name mqdockerup \
+  --env-file .env \
   -e MAIN_CONTAINERCHECKINTERVAL="5m" \
   -e MAIN_CONTAINERCHECKONCHANGES=true \
   -e MAIN_UPDATECHECKINTERVAL="" \
@@ -169,13 +170,9 @@ docker run -d \
   -e MQTT_DISCOVERYPREFIX="homeassistant" \
   -e MQTT_SUGGESTEDAREA="Docker" \
   -e MQTT_CLIENTID="mqdockerup" \
-  -e MQTT_USERNAME="ha" \
-  -e MQTT_PASSWORD="" \
   -e MQTT_HALEGACY=false \
   -e MQTT_CONNECTTIMEOUT=60 \
   -e MQTT_PROTOCOLVERSION=5 \
-  -e ACCESSTOKENS_DOCKERHUB="" \
-  -e ACCESSTOKENS_GITHUB="" \
   -e IGNORE_CONTAINERS="" \
   -e IGNORE_UPDATES="" \
   -e LOGS_LEVEL="info" \
@@ -184,6 +181,9 @@ docker run -d \
   -v your/path/config.yaml:/app/config.yaml \
   micrib/mqdockerup:latest
 ```
+
+> [!TIP]
+> Secrets like `MQTT_PASSWORD`, `ACCESSTOKENS_GITHUB`, and `APPLICATIONAPIS_*_APIKEY` should go in your `.env` file rather than on the command line. See `.env.example` for the full list.
 
 ### <a name="compose"></a>Docker Compose
 
@@ -194,6 +194,8 @@ services:
     container_name: mqdockerup
     hostname: mqdockerup
     restart: always
+    env_file:
+      - .env  # Secrets and API keys live here (see .env.example)
     environment:
       MAIN_CONTAINERCHECKINTERVAL: "5m"
       MAIN_CONTAINERCHECKONCHANGES: true
@@ -204,13 +206,9 @@ services:
       MQTT_DISCOVERYPREFIX: "homeassistant"
       MQTT_SUGGESTEDAREA: "Docker"
       MQTT_CLIENTID: "mqdockerup"
-      MQTT_USERNAME: "ha"
-      MQTT_PASSWORD: ""
       MQTT_HALEGACY : false
       MQTT_CONNECTTIMEOUT: 60
       MQTT_PROTOCOLVERSION: 5
-      ACCESSTOKENS_DOCKERHUB: ""
-      ACCESSTOKENS_GITHUB: ""
       IGNORE_CONTAINERS: ""
       IGNORE_UPDATES: ""
       LOGS_LEVEL: "info"
@@ -219,6 +217,11 @@ services:
       - your/path/data:/app/data/ 
       - your/path/config.yaml:/app/config.yaml 
 ```
+
+> [!TIP]
+> Copy `.env.example` to `.env` and fill in your secrets (MQTT password, access tokens, API keys). 
+> The `.env` file is git-ignored so credentials won't be accidentally committed.
+> Values in `environment:` override those from `env_file`, so non-secret config can stay inline.
 
 ## Labels
 
