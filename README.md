@@ -179,7 +179,7 @@ docker run -d \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v your/path/data:/app/data/ \
   -v your/path/config.yaml:/app/config.yaml \
-  micrib/mqdockerup:latest
+  cqrt/mqdockerup:latest
 ```
 
 > [!TIP]
@@ -234,10 +234,11 @@ You can use some of these labels on individual containers to apply to them the e
 |    `mqdockerup.ignore_updates` | `boolean` | Optional | `true` to ignore the updates of the container that have this label, `false` to not ignore |
 
 
-## Screenshots
+## Home Assistant Screenshots
 
-![image](https://github.com/user-attachments/assets/f6f78bdb-4f7d-4080-8588-63fdaafa1e51)
-<img width="600" alt="image" src="https://user-images.githubusercontent.com/7061122/221386530-d5168c26-8ead-4418-9ab4-84ad6ff91ba9.png">
+<img width="561" height="464" alt="Untitled" src="https://github.com/user-attachments/assets/dc93ae98-553a-40e1-9282-057efa4d81ef" />
+<img width="1033" height="824" alt="Untitled 2" src="https://github.com/user-attachments/assets/3d476012-8524-42c1-9592-6f84e8e46891" />
+
 
 ## Contribute
 

@@ -44,6 +44,20 @@ MqDockerUp now supports fetching release notes from application-specific APIs as
 - **Authentication**: API key via `X-Api-Key` header
 - **Release Notes Format**: Includes version, release date, new features, and bug fixes
 
+### Prowlarr
+- **Detection**: Container name or image contains "prowlarr"
+- **API Endpoint**: `http://{container-name}:9696/api/v1/update`
+- **Default Port**: 9696
+- **Authentication**: API key via `X-Api-Key` header
+- **Release Notes Format**: Includes version, release date, new features, and bug fixes
+
+### Bazarr
+- **Detection**: Container name or image contains "bazarr"
+- **API Endpoint**: `http://{container-name}:6767/api/system/releases`
+- **Default Port**: 6767
+- **Authentication**: API key via `X-Api-Key` header
+- **Release Notes Format**: Includes version, release date, new features, and bug fixes
+
 ## Network Requirements
 
 For application API adapters to work, MqDockerUp needs:
@@ -108,6 +122,9 @@ ACCESSTOKENS_GITHUB=ghp_your_token_here
 # Application API keys
 APPLICATIONAPIS_RADARR_APIKEY=your-radarr-api-key
 APPLICATIONAPIS_SONARR_APIKEY=your-sonarr-api-key
+APPLICATIONAPIS_LIDARR_APIKEY=your-lidarr-api-key
+APPLICATIONAPIS_READARR_APIKEY=your-readarr-api-key
+APPLICATIONAPIS_PROWLARR_APIKEY=your-prowlarr-api-key
 APPLICATIONAPIS_BAZARR_APIKEY=your-bazarr-api-key
 ```
 
@@ -127,6 +144,9 @@ services:
       - ACCESSTOKENS_GITHUB=${ACCESSTOKENS_GITHUB}
       - APPLICATIONAPIS_RADARR_APIKEY=${APPLICATIONAPIS_RADARR_APIKEY}
       - APPLICATIONAPIS_SONARR_APIKEY=${APPLICATIONAPIS_SONARR_APIKEY}
+      - APPLICATIONAPIS_LIDARR_APIKEY=${APPLICATIONAPIS_LIDARR_APIKEY}
+      - APPLICATIONAPIS_READARR_APIKEY=${APPLICATIONAPIS_READARR_APIKEY}
+      - APPLICATIONAPIS_PROWLARR_APIKEY=${APPLICATIONAPIS_PROWLARR_APIKEY}
       - APPLICATIONAPIS_BAZARR_APIKEY=${APPLICATIONAPIS_BAZARR_APIKEY}
 ```
 
