@@ -120,6 +120,14 @@ services:
       - .env
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - MQTT_CONNECTIONURI=mqtt://broker:1883
+      - MQTT_USERNAME=${MQTT_USERNAME}
+      - MQTT_PASSWORD=${MQTT_PASSWORD}
+      - ACCESSTOKENS_GITHUB=${ACCESSTOKENS_GITHUB}
+      - APPLICATIONAPIS_RADARR_APIKEY=${APPLICATIONAPIS_RADARR_APIKEY}
+      - APPLICATIONAPIS_SONARR_APIKEY=${APPLICATIONAPIS_SONARR_APIKEY}
+      - APPLICATIONAPIS_BAZARR_APIKEY=${APPLICATIONAPIS_BAZARR_APIKEY}
 ```
 
 Available environment variables per application:
