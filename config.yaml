@@ -29,26 +29,26 @@ accessTokens:
 applicationApis:
   radarr:
     enabled: true
-    apiKey: "e3858609dd524dd1b8760d2c2d46cf39"  # Get from Radarr Settings > General > Security > API Key
+    apiKey: ""  # Get from Radarr Settings > General > Security > API Key
     # baseUrl: "http://radarr:7878"  # Optional: Override auto-detected URL
   sonarr:
     enabled: true
-    apiKey: "5228e9a3fcb14a85920e13a1ab3fe99c"
+    apiKey: ""  # Get from Sonarr Settings > General > Security > API Key
   lidarr:
     enabled: true
-    apiKey: "dc53320ad4db4473856d8c7b5427f8a5"
+    apiKey: ""  # Get from Lidarr Settings > General > Security > API Key
   readarr:
     enabled: true
-    apiKey: "487e75ede02e4056af35c1fc3e21caf6"
-    baseUrl: "http://host.docker.internal:6969"  # Optional: Override auto-detected URL
+    apiKey: ""  # Get from Readarr Settings > General > Security > API Key
+    # baseUrl: "http://readarr:8787"  # Optional: Override auto-detected URL
   prowlarr:
     enabled: true
-    apiKey: "98da3dbb66554c2ca3b30cd1c38c5a4c"  # Get from Prowlarr Settings > General > Security > API Key
-    baseUrl: "http://prowlarr:9797"
+    apiKey: ""  # Get from Prowlarr Settings > General > Security > API Key
+    # baseUrl: "http://prowlarr:9696"  # Optional: Override auto-detected URL
   bazarr:
     enabled: true
-    apiKey: "157aef260cf2133b79feca02c2ffacb8"  # Get from Bazarr Settings > General > Security > API Key
-    # baseUrl: "http://bazarr:6767"
+    apiKey: ""  # Get from Bazarr Settings > General > Security > API Key
+    # baseUrl: "http://bazarr:6767"  # Optional: Override auto-detected URL
 
 
 # Ignore Configuration
