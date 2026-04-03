@@ -1,13 +1,13 @@
 {
   "name": "mqdockerup",
-  "version": "1.23.7",
+  "version": "v0.3.6-alpha",
   "description": "A Node.js application that pushes information about running Docker containers to an MQTT server.",
   "main": "index.js",
   "scripts": {
     "test": "jest",
     "start": "ts-node src/index.ts"
   },
-  "author": "Michel Ferreira Ribeiro",
+  "author": "cqrt",
   "license": "MIT",
   "keywords": [
     "docker",
