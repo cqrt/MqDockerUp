@@ -6,7 +6,7 @@ This document explains how to configure MqDockerUp to fetch release notes direct
 
 MqDockerUp now supports fetching release notes from application-specific APIs as a fallback when registry-based release notes aren't available. This is particularly useful for:
 - Docker Hub images (e.g., LinuxServer.io containers)
-- Applications with their own update APIs (Radarr, Sonarr, Prowlarr, etc.)
+- Applications with their own update APIs (Radarr, Sonarr, Prowlarr, Lidarr etc.)
 
 ## How It Works
 
@@ -69,8 +69,6 @@ For application API adapters to work, MqDockerUp needs:
 ### Example Docker Compose Configuration
 
 ```yaml
-version: '3.8'
-
 services:
   mqdockerup:
     image: ghcr.io/cqrt/mqdockerup:latest
