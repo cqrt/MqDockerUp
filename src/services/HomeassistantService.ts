@@ -271,6 +271,12 @@ export default class HomeassistantService {
 
 
       if (!IgnoreService.ignoreUpdates(container)) {
+        // Release Notes (full text via JSON attributes, bypasses HA's 255-char state limit)
+        topic = `${discoveryPrefix}/sensor/${topicName}/docker_release_notes/config`;
+        payload = this.createReleaseSummaryPayload("Release Notes", image, tag, deviceName);
+        this.publishMessage(client, topic, payload, {retain: true});
+        if (!containerIsInDb) await DatabaseService.addTopic(topic, container.Id);
+
         // Container manual update
         topic = `${discoveryPrefix}/button/${topicName}/docker_manual_update/config`;
         payload = {
@@ -432,6 +438,50 @@ export default class HomeassistantService {
       entity_picture: "https://github.com/cqrt/MqDockerUp/raw/main/assets/logo_200x200.png",
       payload_install: JSON.stringify({containerId: containerId, image: image}),
       command_topic: `${config.mqtt.topic}/update`,
+    };
+  }
+
+  /**
+   * Creates a sensor payload for the full release notes, stored as a JSON attribute
+   * to bypass Home Assistant's 255-character limit on state values.
+   * The full text is accessible in HA as: state_attr('sensor.<name>', 'release_notes')
+   */
+  public static createReleaseSummaryPayload(
+    name: string,
+    image: string,
+    tag: string,
+    deviceName: string,
+    prefix: string = ""
+  ): object {
+    const formatedImage = image.replace(/[\/.:;,+*?@^$%#!&"'`|<>{}\[\]()-\s\u0000-\u001F\u007F]/g, "_");
+    const formatedName = name.toLowerCase().replace(/[^a-z0-9_]/g, "_");
+    const defaultEntityId = `sensor.${prefix ? `${prefix}_` : ""}${formatedImage}_${formatedName}`;
+    const updateTopic = `${config.mqtt.topic}/${formatedImage}/update`;
+
+    return {
+      default_entity_id: defaultEntityId,
+      name: `${name}`,
+      unique_id: prefix ? `${prefix}/${image} ${name}` : `${image} ${name}`,
+      // State carries a short indicator; the full notes live in the attribute below
+      state_topic: updateTopic,
+      value_template: `{{ 'available' if value_json.release_summary else 'none' }}`,
+      // json_attributes_topic stores the full release notes without the 255-char limit
+      json_attributes_topic: updateTopic,
+      json_attributes_template: `{{ {'release_notes': value_json.release_summary | default('')} | tojson }}`,
+      availability: {
+        topic: `${config.mqtt.topic}/availability`,
+      },
+      payload_available: "Online",
+      payload_not_available: "Offline",
+      device: {
+        manufacturer: "MqDockerUp",
+        model: `${image}:${tag}`,
+        name: deviceName,
+        sw_version: packageJson.version,
+        sa: suggestedArea,
+        identifiers: [`${image}_${tag}`],
+      },
+      icon: "mdi:text-box-outline",
     };
   }
 
