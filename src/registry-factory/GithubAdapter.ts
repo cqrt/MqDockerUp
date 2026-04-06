@@ -81,13 +81,30 @@ export class GithubAdapter extends ImageRegistryAdapter {
                     if (releasesResponse.data && Array.isArray(releasesResponse.data) && releasesResponse.data.length > 0) {
                         const releases: any[] = releasesResponse.data;
 
-                        // Normalise a tag string by stripping a leading 'v' so that
-                        // "v2.9.2" and "2.9.2" compare as equal.
-                        const normalise = (t: string) => t.replace(/^v/i, '').trim();
+                        // Normalise a version string for reliable comparison:
+                        //  • strip leading 'v'
+                        //  • strip semver build metadata  (+abc1234)
+                        //  • strip LinuxServer.io suffixes (-ls123, -r2-ls447, etc.)
+                        //  • trim whitespace
+                        const normalise = (t: string): string => t
+                            .replace(/^v/i, '')
+                            .replace(/\+.*$/, '')          // semver build metadata
+                            .replace(/-ls\d+.*$/i, '')     // LinuxServer.io  -ls342
+                            .replace(/-r\d+(-ls\d+.*)?$/i, '') // Alpine rev  -r2 / -r2-ls447
+                            .trim();
 
-                        // this.installedVersion is the real semver (may come from image labels
-                        // when the Docker tag is 'latest'); fall back to this.tag.
-                        const effectiveVersion = this.installedVersion !== 'latest'
+                        // Reduce a version string to its first 3 numeric components for
+                        // a loose partial match (e.g. "0.24.5.0" ≈ "0.24.5").
+                        const toThreePart = (v: string): string => v.split('.').slice(0, 3).join('.');
+
+                        // Branch / channel names are NOT version numbers and cannot be
+                        // matched against GitHub release tags.
+                        const CHANNEL_RE = /^(master|main|develop(ment)?|nightly|rolling|stable|edge|beta|alpha|release|next|preview|canary|head|trunk)$/i;
+                        const isChannelName = (v: string): boolean =>
+                            CHANNEL_RE.test(v) || !/\d/.test(v);  // no digit → not a version
+
+                        // Prefer the label-resolved version; fall back to the Docker tag.
+                        const effectiveVersion = (this.installedVersion && this.installedVersion !== 'latest')
                             ? this.installedVersion
                             : this.tag;
 
@@ -96,33 +113,49 @@ export class GithubAdapter extends ImageRegistryAdapter {
 
                         let relevantReleases: any[];
 
-                        if (effectiveVersion && effectiveVersion !== 'latest') {
+                        const canMatchVersion = effectiveVersion &&
+                            effectiveVersion !== 'latest' &&
+                            !isChannelName(effectiveVersion);
+
+                        if (canMatchVersion) {
                             const normEffective = normalise(effectiveVersion);
-                            // Find the index of the installed version in the list
-                            const installedIndex = releases.findIndex(
+
+                            // 1. Try exact match after normalisation
+                            let installedIndex = releases.findIndex(
                                 (r: any) => normalise(r.tag_name || '') === normEffective
                             );
+
+                            // 2. If no exact match, try a 3-part semver partial match
+                            //    so that "0.24.5.0" matches a release tagged "v0.24.5"
+                            if (installedIndex === -1) {
+                                const eff3 = toThreePart(normEffective);
+                                installedIndex = releases.findIndex(
+                                    (r: any) => toThreePart(normalise(r.tag_name || '')) === eff3
+                                );
+                                if (installedIndex !== -1) {
+                                    logger.debug(`Partial semver match: "${normEffective}" matched release "${releases[installedIndex].tag_name}" on first 3 components`);
+                                }
+                            }
 
                             logger.debug(`Looking for version "${normEffective}" in releases → index ${installedIndex}`);
 
                             if (installedIndex > 0) {
-                                // Releases 0 … installedIndex-1 are all newer than what is installed
                                 relevantReleases = releases.slice(0, installedIndex);
                                 logger.info(`Found ${relevantReleases.length} release(s) newer than ${effectiveVersion} for ${user}/${image}`);
                             } else if (installedIndex === 0) {
-                                // Already on the latest release
                                 relevantReleases = [];
                                 logger.info(`Image ${user}/${image} is already on the latest release (${effectiveVersion})`);
                             } else {
-                                // Installed version not found in the release list.
-                                // Show up to 5 recent releases as a best-effort fallback.
+                                // Version not found – may be a CalVer/non-semver scheme that
+                                // differs from the GitHub release tags.  Show 5 recent releases.
                                 relevantReleases = releases.slice(0, 5);
                                 logger.warn(`Installed version "${effectiveVersion}" not found in releases for ${user}/${image} – showing ${relevantReleases.length} most recent release(s) as fallback`);
                             }
                         } else {
-                            // Tag is 'latest' with no label version available – show last 5 releases
+                            // Channel name (master/main/nightly…) or 'latest' with no label –
+                            // we cannot determine which release is installed; show 5 recent ones.
                             relevantReleases = releases.slice(0, 5);
-                            logger.info(`No specific version for ${user}/${image} (tag="latest") – showing ${relevantReleases.length} most recent release(s)`);
+                            logger.info(`No specific version for ${user}/${image} (effectiveVersion="${effectiveVersion}") – showing ${relevantReleases.length} most recent release(s)`);
                         }
 
                         if (relevantReleases.length > 0) {
