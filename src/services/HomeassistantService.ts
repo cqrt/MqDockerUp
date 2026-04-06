@@ -588,32 +588,8 @@ export default class HomeassistantService {
     let releaseNotes: string | undefined = undefined;
     let repoUrlFromRelease: string | undefined = undefined;
 
-    // When the Docker tag is 'latest' the image label org.opencontainers.image.version
-    // often carries the actual semver (e.g. "2.9.2").  Only trust it when it looks like a
-    // proper semver (at least X.Y.Z with 3+ numeric components) so we don't accidentally
-    // pass CalVer labels (e.g. "24.04"), branch names ("master"), or commit-hash suffixes.
-    let installedVersion: string | undefined = undefined;
-    if (tag === "latest") {
-      const versionLabel = imageInfo?.Config?.Labels?.["org.opencontainers.image.version"];
-      if (versionLabel) {
-        // Strip known suffixes before validating so that "0.24.5.0+abc123" or "v1.5.6-ls342"
-        // are evaluated as "0.24.5.0" and "1.5.6" respectively.
-        const stripped = versionLabel
-          .replace(/\+.*$/, "")         // semver build metadata
-          .replace(/-ls\d+.*$/i, "")    // LinuxServer.io suffix
-          .replace(/-r\d+(-ls\d+.*)?$/i, ""); // Alpine revision
-        const isSemverLike = /^v?\d+\.\d+\.\d+/.test(stripped);
-        if (isSemverLike) {
-          installedVersion = versionLabel;
-          logger.info(`Resolved installed version from image label for ${image}: ${installedVersion}`);
-        } else {
-          logger.debug(`Skipping image label "${versionLabel}" for ${image} – does not look like a semver (CalVer, branch name, or other format)`);
-        }
-      }
-    }
-
     // Get digest and release notes from registry
-    const digestInfo = await DockerService.getImageNewDigestWithReleaseNotes(image, tag, installedVersion);
+    const digestInfo = await DockerService.getImageNewDigestWithReleaseNotes(image, tag);
     newDigest = digestInfo.newDigest;
     releaseNotes = digestInfo.releaseNotes;
     repoUrlFromRelease = digestInfo.repoUrl;

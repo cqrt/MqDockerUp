@@ -11,10 +11,10 @@ export class ImageRegistryAdapterFactory {
         // add other adapters here in a similar way
     ];
 
-    static getAdapter(image: string, tag?: string, accessToken?: string, installedVersion?: string): ImageRegistryAdapter {
+    static getAdapter(image: string, tag?: string, accessToken?: string): ImageRegistryAdapter {
         for (const adapter of this.registryAdapters) {
             if (adapter.canHandleImage(image)) {
-                return new adapter(image, tag, accessToken, installedVersion);
+                return new adapter(image, tag, accessToken);
             }
         }
         
