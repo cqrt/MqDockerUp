@@ -588,8 +588,20 @@ export default class HomeassistantService {
     let releaseNotes: string | undefined = undefined;
     let repoUrlFromRelease: string | undefined = undefined;
 
+    // When the Docker tag is 'latest' the image label org.opencontainers.image.version
+    // often carries the actual semver (e.g. "2.9.2").  Use that for release-note filtering
+    // so we can show every changelog entry between the installed version and the latest.
+    let installedVersion: string | undefined = undefined;
+    if (tag === "latest") {
+      const versionLabel = imageInfo?.Config?.Labels?.["org.opencontainers.image.version"];
+      if (versionLabel) {
+        installedVersion = versionLabel;
+        logger.info(`Resolved installed version from image label for ${image}: ${installedVersion}`);
+      }
+    }
+
     // Get digest and release notes from registry
-    const digestInfo = await DockerService.getImageNewDigestWithReleaseNotes(image, tag);
+    const digestInfo = await DockerService.getImageNewDigestWithReleaseNotes(image, tag, installedVersion);
     newDigest = digestInfo.newDigest;
     releaseNotes = digestInfo.releaseNotes;
     repoUrlFromRelease = digestInfo.repoUrl;

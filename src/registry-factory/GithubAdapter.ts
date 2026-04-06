@@ -7,13 +7,17 @@ const config = ConfigService.getConfig();
 export class GithubAdapter extends ImageRegistryAdapter {
     private tag: string;
     private accessToken: string | undefined;
+    /** The actual installed semver, which may differ from `tag` when tag is 'latest'. */
+    private installedVersion: string;
 
-    constructor(image: string, tag: string = 'latest') {
+    constructor(image: string, tag: string = 'latest', _accessToken?: string, installedVersion?: string) {
         const accessToken =  config?.accessTokens?.github;
 
         super(image, accessToken);
         this.tag = tag;
         this.accessToken = accessToken;
+        // Fall back to the Docker tag when no explicit version is provided
+        this.installedVersion = installedVersion || tag;
 
         if (!accessToken) {
             logger.error('Github access token is not defined');
@@ -81,31 +85,44 @@ export class GithubAdapter extends ImageRegistryAdapter {
                         // "v2.9.2" and "2.9.2" compare as equal.
                         const normalise = (t: string) => t.replace(/^v/i, '').trim();
 
-                        const installedTag = normalise(this.tag);
+                        // this.installedVersion is the real semver (may come from image labels
+                        // when the Docker tag is 'latest'); fall back to this.tag.
+                        const effectiveVersion = this.installedVersion !== 'latest'
+                            ? this.installedVersion
+                            : this.tag;
+
+                        logger.debug(`Release note filtering for ${user}/${image}: docker tag="${this.tag}", installedVersion="${this.installedVersion}", effectiveVersion="${effectiveVersion}"`);
+                        logger.debug(`Available releases: ${releases.slice(0, 5).map((r: any) => r.tag_name).join(', ')}${releases.length > 5 ? '…' : ''}`);
+
                         let relevantReleases: any[];
 
-                        if (this.tag && this.tag !== 'latest') {
+                        if (effectiveVersion && effectiveVersion !== 'latest') {
+                            const normEffective = normalise(effectiveVersion);
                             // Find the index of the installed version in the list
                             const installedIndex = releases.findIndex(
-                                (r: any) => normalise(r.tag_name || '') === installedTag
+                                (r: any) => normalise(r.tag_name || '') === normEffective
                             );
+
+                            logger.debug(`Looking for version "${normEffective}" in releases → index ${installedIndex}`);
 
                             if (installedIndex > 0) {
                                 // Releases 0 … installedIndex-1 are all newer than what is installed
                                 relevantReleases = releases.slice(0, installedIndex);
-                                logger.info(`Found ${relevantReleases.length} release(s) newer than ${this.tag} for ${user}/${image}`);
+                                logger.info(`Found ${relevantReleases.length} release(s) newer than ${effectiveVersion} for ${user}/${image}`);
                             } else if (installedIndex === 0) {
                                 // Already on the latest release
                                 relevantReleases = [];
-                                logger.info(`Image ${user}/${image} is already on the latest release (${this.tag})`);
+                                logger.info(`Image ${user}/${image} is already on the latest release (${effectiveVersion})`);
                             } else {
-                                // Installed tag not found in the release list – fall back to latest only
-                                relevantReleases = releases.slice(0, 1);
-                                logger.warn(`Installed tag ${this.tag} not found in releases for ${user}/${image}, using latest release notes only`);
+                                // Installed version not found in the release list.
+                                // Show up to 5 recent releases as a best-effort fallback.
+                                relevantReleases = releases.slice(0, 5);
+                                logger.warn(`Installed version "${effectiveVersion}" not found in releases for ${user}/${image} – showing ${relevantReleases.length} most recent release(s) as fallback`);
                             }
                         } else {
-                            // Tag is 'latest' or unknown – include only the most recent release
-                            relevantReleases = releases.slice(0, 1);
+                            // Tag is 'latest' with no label version available – show last 5 releases
+                            relevantReleases = releases.slice(0, 5);
+                            logger.info(`No specific version for ${user}/${image} (tag="latest") – showing ${relevantReleases.length} most recent release(s)`);
                         }
 
                         if (relevantReleases.length > 0) {

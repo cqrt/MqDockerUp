@@ -5,7 +5,7 @@ export class DockerhubAdapter extends ImageRegistryAdapter {
     private static readonly DOCKER_API_URL = 'https://hub.docker.com/v2/repositories';
     private tag: string;
 
-    constructor(image: string, tag: string = 'latest', accessToken?: string) {
+    constructor(image: string, tag: string = 'latest', accessToken?: string, _installedVersion?: string) {
         super(image, accessToken);
         this.tag = tag;
     }
