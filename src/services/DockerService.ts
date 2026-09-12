@@ -30,6 +30,11 @@ export default class DockerService {
   public static updatingContainers: string[] = [];
   public static SourceUrlCache = new Map<string, string>();
 
+  /**
+   * Maximum number of characters of an unparsable line to include in the logs.
+   */
+  private static readonly LOG_CHUNK_MAX_LENGTH = 500;
+
   // Start listening to Docker events
   public static listenToDockerEvents() {
     const handledActions = new Set([
@@ -52,23 +57,27 @@ export default class DockerService {
         return;
       }
 
+      // Let Node decode the stream so multi-byte UTF-8 characters split across
+      // two chunks are not corrupted.
+      data.setEncoding?.('utf8');
+
+      // The `/events` endpoint streams newline-delimited JSON (one event per line).
+      // A single chunk may contain several events, a partial event, or both, so
+      // incomplete trailing data is buffered until the next chunk arrives.
+      let buffer = '';
+
       data.on('data', (chunk: any) => {
-        try {
-          const event = JSON.parse(chunk.toString());
+        const { events, remainder } = DockerService.parseDockerEventChunk(String(chunk), buffer);
+        buffer = remainder;
+        events.forEach((event) => DockerService.handleDockerEvent(event, handledActions));
+      });
 
-          if (event.Type === 'container') {
-            const containerName = event.Actor.Attributes.name;
-            const containerId = event.Actor.ID;
-
-            if (handledActions.has(event.Action)) {
-              logger.debug(`${event.Action}: ${containerName}`);
-              DockerService.events.emit(event.Action, { containerName, containerId });
-            } else {
-              logger.debug(`${event.Action}: ${containerName}`);
-            }
-          }
-        } catch (error) {
-          logger.error('Error parsing Docker event JSON:', error, 'Chunk:', chunk.toString());
+      data.on('end', () => {
+        // Flush an event that was not terminated by a newline before the stream ended
+        if (buffer.trim()) {
+          const { events } = DockerService.parseDockerEventChunk('\n', buffer);
+          buffer = '';
+          events.forEach((event) => DockerService.handleDockerEvent(event, handledActions));
         }
       });
 
@@ -76,6 +85,64 @@ export default class DockerService {
         logger.error('Error while listening to docker events:', error);
       });
     });
+  }
+
+  /**
+   * Parses a chunk of the Docker events stream.
+   * The Docker `/events` endpoint streams newline-delimited JSON, so every
+   * complete line is parsed on its own and any trailing partial line is returned
+   * as `remainder` so it can be prepended to the next chunk.
+   *
+   * @param chunk The raw chunk received from the Docker events stream
+   * @param buffer The partial event left over from the previous chunk
+   * @returns The events parsed from the chunk and the leftover partial event
+   */
+  public static parseDockerEventChunk(chunk: string, buffer: string = ''): { events: any[], remainder: string } {
+    const lines = (buffer + chunk).split('\n');
+    const remainder = lines.pop() ?? '';
+    const events: any[] = [];
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+
+      try {
+        events.push(JSON.parse(trimmed));
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        const snippet = trimmed.length > DockerService.LOG_CHUNK_MAX_LENGTH
+          ? `${trimmed.substring(0, DockerService.LOG_CHUNK_MAX_LENGTH)}...`
+          : trimmed;
+        logger.error(`Error parsing Docker event JSON: ${message} | chunk: ${snippet}`);
+      }
+    }
+
+    return { events, remainder };
+  }
+
+  /**
+   * Handles a single parsed Docker event and emits it to the registered listeners.
+   *
+   * @param event The parsed Docker event
+   * @param handledActions The actions that should be emitted
+   */
+  private static handleDockerEvent(event: any, handledActions: Set<string>) {
+    if (event?.Type !== 'container') {
+      return;
+    }
+
+    const containerName = event?.Actor?.Attributes?.name;
+    const containerId = event?.Actor?.ID;
+
+    if (!containerName || !containerId) {
+      return;
+    }
+
+    logger.debug(`${event.Action}: ${containerName}`);
+
+    if (handledActions.has(event.Action)) {
+      DockerService.events.emit(event.Action, { containerName, containerId });
+    }
   }
 
 
