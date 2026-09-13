@@ -1,0 +1,34 @@
+# MqDockerUp - release workflow (apply to every change)
+
+After finishing **any** change in this repository, always complete all of these steps
+before reporting the task as done:
+
+## 1. Validate
+- `node ./node_modules/typescript/lib/tsc.js -p tsconfig.json --noEmit --composite false`
+- `node ./node_modules/jest/bin/jest.js --ci`
+- Add or update tests for behaviour changes (one test file per feature, see `tests/`).
+
+## 2. Clean up temp files
+- Remove scratch/temporary files created while working: captured command logs
+  (e.g. `proceed-while-running-*.log`), runtime logs (`src/services/logs/*`),
+  throwaway scripts and generated `*.db`/`*.log` files.
+- Never delete tracked files, `dist/` or `node_modules/`.
+
+## 3. Commit
+- Use the repo's conventional-commit style: `fix:`, `feat:`, `chore:`, `ci:`, `docs:`, `test:`.
+- Short imperative subject, bullet points in the body for the details.
+
+## 4. Bump the version
+- `npm version <next> --no-git-tag-version` (updates `package.json` and `package-lock.json`).
+- Commit it separately as `chore: bump version to <next>`.
+- `package.json` `version` is what the service reports to Home Assistant
+  (`LoggerService`/`HomeassistantService`), so it must match the release tag.
+
+## 5. Tag and push
+- Create an **annotated** tag on the version-bump commit:
+  `git tag -a vX.Y.Z -m "vX.Y.Z"`
+- Push the branch and the tag: `git push origin main --follow-tags`
+  (or `git push origin main` followed by `git push origin vX.Y.Z`).
+- Pushing a `v*.*.*` tag is what triggers `.github/workflows/docker-publish.yml`,
+  which builds and publishes the Docker image to `ghcr.io/cqrt/mqdockerup` and
+  creates the GitHub release. A change is only deployable once the tag is pushed.

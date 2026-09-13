@@ -6,7 +6,7 @@ import logger from "./LoggerService";
 import IgnoreService from "./IgnoreService";
 import HomeassistantService from "./HomeassistantService";
 import DatabaseService from "./DatabaseService";
-import axios, { AxiosInstance } from 'axios';
+import axios from 'axios';
 import {mqttClient} from "../index";
 
 // Add interface for mount types
@@ -140,8 +140,13 @@ export default class DockerService {
 
     logger.debug(`${event.Action}: ${containerName}`);
 
-    if (handledActions.has(event.Action)) {
-      DockerService.events.emit(event.Action, { containerName, containerId });
+    // Docker reports health changes as "health_status: healthy" or
+    // "health_status: unhealthy", so the action has to be reduced to its base
+    // name for the emitted event to match the registered listeners.
+    const action = typeof event.Action === 'string' ? event.Action.split(':')[0].trim() : '';
+
+    if (handledActions.has(action)) {
+      DockerService.events.emit(action, { containerName, containerId });
     }
   }
 
@@ -169,7 +174,6 @@ export default class DockerService {
    * Gets the Docker image registry for the specified image name.
    *
    * @param imageName - The name of the Docker image.
-   * @param tag - The tag of the Docker image.
    * @returns A promise that resolves to an object with the registry name
    */
   public static async getImageRegistryName(imageName: string): Promise<string> {
@@ -248,8 +252,8 @@ export default class DockerService {
    * Gets the source repository for the specified Docker image.
    * @param imageName - The name of the Docker image.
    * @param imageTag - The tag of the Docker image.
-   * @returns A promise that resolves to the source repository URL.
-   * @throws An error if the source repository could not be found.
+   * @returns A promise that resolves to the source repository URL, or `null` when
+   * it could not be found.
    */
   public static async getSourceRepo(imageName: string, imageTag: string): Promise<string | null> {
     // Check cache first
@@ -267,38 +271,52 @@ export default class DockerService {
     });
 
     if (labels && labels["org.opencontainers.image.source"]) {
-      const url = labels["org.opencontainers.image.source"];
-      DockerService.SourceUrlCache.set(imageName + ":" + imageTag, url);
-      return url;
+      return DockerService.cacheSourceUrl(imageName, imageTag, labels["org.opencontainers.image.source"]);
     }
 
     // Try method 2: Check Docker Hub API
     const dockerHubUrl = `https://hub.docker.com/v2/repositories/${imageName}`;
     const response = await axios.get(dockerHubUrl).catch((error) => {
-      if (error.response.status === 404) {
+      // `error.response` is only set when the server answered, for network
+      // errors (DNS, timeout, reset connection, ...) it is undefined, so it has
+      // to be accessed safely to avoid throwing and crashing the caller.
+      if (error?.response?.status === 404) {
         logger.info(`Repository not found: ${imageName}`);
       } else {
         logger.error("Error accessing Docker Hub API:", error);
       }
+      return null;
     });
 
     if (response && response.status === 200) {
-      const data = response.data;
-      const fullDescription = data.full_description || "";
+      const fullDescription = response.data?.full_description || "";
       if (!fullDescription.toLowerCase().includes("[github]")) {
         return null;
       }
 
-      const url = this.parseGithubUrl(fullDescription);
+      const url = DockerService.parseGithubUrl(fullDescription);
 
-      // Cache URL
       if (url !== null) {
-        DockerService.SourceUrlCache.set(imageName, url);
-        return url;
+        return DockerService.cacheSourceUrl(imageName, imageTag, url);
       }
     }
 
     return null;
+  }
+
+  /**
+   * Caches the source repository URL of an image, both with and without its
+   * tag, so the cache is hit no matter how the image is referenced.
+   *
+   * @param imageName - The name of the Docker image
+   * @param imageTag - The tag of the Docker image
+   * @param url - The source repository URL to cache
+   * @returns The cached URL
+   */
+  private static cacheSourceUrl(imageName: string, imageTag: string, url: string): string {
+    DockerService.SourceUrlCache.set(imageName, url);
+    DockerService.SourceUrlCache.set(imageName + ":" + imageTag, url);
+    return url;
   }
 
   /**
@@ -311,7 +329,15 @@ export default class DockerService {
     return await DockerService.docker.getImage(imageId).inspect();
   }
 
-  public static async updateContainer(containerId: string) {
+  /**
+   * Updates a container by pulling the newest version of its image and
+   * recreating the container with the pulled image.
+   *
+   * @param containerId - The ID of the Docker container to update.
+   * @returns A promise that resolves to the new container, or `undefined` when
+   * the container no longer exists or the update failed.
+   */
+  public static async updateContainer(containerId: string): Promise<Docker.Container | undefined> {
     try {
       logger.info(`Updating individual container: ${containerId}`);
 
@@ -332,26 +358,39 @@ export default class DockerService {
       if (info) {
         const oldImageId = info.Image;
         const image = info.Config.Image;
-        const imageName = image.split(":")[0];
 
         // Store layer progress here
         const layerProgress: Record<string, { current: number; total: number }> = {};
         let lastPublishTime = 0;
 
+        // `docker.pull` and `modem.followProgress` are callback based and only
+        // report completion asynchronously, so a promise is used to make sure
+        // this method resolves once the container has been updated (or failed).
+        let resolveUpdate: (container: Docker.Container | undefined) => void = () => { };
+        let rejectUpdate: (error: any) => void = () => { };
+        const updateFinished = new Promise<Docker.Container | undefined>((resolve, reject) => {
+          resolveUpdate = resolve;
+          rejectUpdate = reject;
+        });
+
         await DockerService.docker.pull(image, async (err: any, stream: any) => {
           logger.info("Pulling image: " + image);
           if (err) {
             logger.error("Pulling Error: " + err);
+            rejectUpdate(err);
             return;
           }
 
-          this.updatingContainers.push(containerId);
+          if (!DockerService.updatingContainers.includes(containerId)) {
+            DockerService.updatingContainers.push(containerId);
+          }
 
           DockerService.docker.modem.followProgress(
             stream,
             async (err: any) => {
               if (err) {
                 logger.error("Stream Error: " + err);
+                rejectUpdate(err);
                 return;
               }
 
@@ -396,10 +435,7 @@ export default class DockerService {
               try {
                 await container.stop();
                 await container.remove();
-                
-                // Remove the old container ID from updatingContainers immediately after removal
-                this.updatingContainers = this.updatingContainers.filter((id) => id !== containerId);
-                
+
                 const newContainer = await DockerService.docker.createContainer(containerConfig);
                 await newContainer.start();
 
@@ -460,11 +496,11 @@ export default class DockerService {
                 // Republish update message to show as up-to-date
                 await HomeassistantService.publishImageUpdateMessage(newContainerInfo, mqttClient);
 
-                return newContainer;
+                resolveUpdate(newContainer);
               } catch (error) {
                 logger.error("Error starting container with new image");
                 logger.error(error);
-                throw error;
+                rejectUpdate(error);
               }
             },
             (event) => {
@@ -501,10 +537,17 @@ export default class DockerService {
             }
           );
         });
+
+        return await updateFinished;
       }
     } catch (error: any) {
       logger.error("Error updating container");
       logger.error(error);
+      return undefined;
+    } finally {
+      // Always stop tracking the container, even when the update failed, so a
+      // failed update is not reported as still in progress on shutdown.
+      DockerService.updatingContainers = DockerService.updatingContainers.filter((id) => id !== containerId);
     }
   }
 
@@ -565,8 +608,11 @@ export default class DockerService {
    */
   public static async restartContainer(containerId: string) {
     const container = DockerService.docker.getContainer(containerId);
+    // `container.restart()` already resolves once the container has been
+    // restarted. `container.wait()` must not be awaited here, because it only
+    // resolves when the container stops, which never happens for a container
+    // that was just restarted.
     await container.restart();
-    await container.wait();
   }
 
   /**
@@ -602,15 +648,30 @@ export default class DockerService {
 
   /**
    * Parses a GitHub URL from a full description.
+   *
+   * Both a markdown link (`[github](https://github.com/owner/repo)`) and a plain
+   * URL that follows the marker (`[github] https://github.com/owner/repo`) are
+   * supported.
+   *
    * @param fullDescription - The full description to parse.
    * @returns The GitHub URL or `null` if it could not be parsed.
    */
   private static parseGithubUrl(fullDescription: string): string | null {
-    const startIndex = fullDescription.indexOf("[github");
-    const endIndex = fullDescription.indexOf("]", startIndex);
-    if (startIndex !== -1 && endIndex !== -1) {
-      return fullDescription.slice(startIndex, endIndex).replace("[github]", "");
+    const markerIndex = fullDescription.toLowerCase().indexOf("[github]");
+    if (markerIndex === -1) {
+      return null;
     }
-    return null;
+
+    const afterMarker = fullDescription.slice(markerIndex);
+
+    // Markdown link: [github](https://github.com/owner/repo)
+    const markdownLink = afterMarker.match(/^\[github\]\(\s*(https?:\/\/[^\s)]+)\s*\)/i);
+    if (markdownLink) {
+      return markdownLink[1];
+    }
+
+    // Plain URL after the marker: [github] https://github.com/owner/repo
+    const plainUrl = afterMarker.match(/https?:\/\/[^\s)\]]+/i);
+    return plainUrl ? plainUrl[0] : null;
   }
 }
